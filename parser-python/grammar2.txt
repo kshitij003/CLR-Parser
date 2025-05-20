@@ -1,9 +1,0 @@
-S -> tm()bBe
-B -> VAFR
-V -> tv[d];
-A -> tvov[d];
-A -> vov[d];
-A -> vov[v];
-F -> fvoduvodzPy
-P -> iv[v]ovAy
-R -> r(v)
