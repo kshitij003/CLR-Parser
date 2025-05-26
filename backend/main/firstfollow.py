@@ -35,7 +35,7 @@ class NonTerminal:
 
 def compute_first(symbol): #chr(1013) corresponds (ϵ) in Unicode
 
-    global production_list, nt_list, t_list
+
 
 # if X is a terminal then first(X) = X
     if symbol in t_list:
@@ -80,7 +80,7 @@ def get_first(symbol): #wrapper method for compute_first
 
 def compute_follow(symbol):
 
-    global production_list, nt_list, t_list
+
 
 # if A is the start symbol, follow (A) = $
     if symbol == list(nt_list.keys())[0]: #this is okay since I'm using an OrderedDict
@@ -104,7 +104,6 @@ def compute_follow(symbol):
 
 def get_follow(symbol):
 
-    global nt_list, t_list
 
     if symbol in t_list.keys():
         return None
@@ -113,20 +112,16 @@ def get_follow(symbol):
 
 # ------------------------------------------------------------------    
 
-def main(pl=None):
+def main(grammar):
 
-    print("ENTER THE FILENAME OF THE PRODUCTION RULES:")
+    F = open(grammar,"r")
 
-    filename = input()
-    F = open(filename,"r")
-
-    global production_list, t_list, nt_list
     ctr=1
 
 
-    if pl==None:
+    
 
-        for line in F:
+    for line in F:
             line = line.replace(' ','')
             line = line.replace('\n','')
             production_list.append(line)
@@ -149,7 +144,7 @@ def main(pl=None):
             ctr+=1
 
                 
-    return pl
+    return 
 # ------------------------------------------------------------------
 
 if __name__=='__main__':

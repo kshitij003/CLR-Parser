@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Output from "../components/parser_output/page";
+
 
 export default function Home() {
   const [code, setCode] = useState("");
   const [parserType, setParserType] = useState("CLR");
   const [displayedGrammar, setDisplayedGrammar] = useState('');
-  const [selectedGrammar, setSelectedGrammar] = useState('grammar1');
+  const [selectedGrammar, setSelectedGrammar] = useState('main/input_grammar_7.txt');
   const [grammarText, setGrammarText] = useState('');
+  const [resultData, setResultData] = useState(null);
+
 
 
   const loadGrammar = async (grammarName) => {
@@ -29,13 +33,11 @@ export default function Home() {
 
     const payload = {
       code: code,
-      parser: parserType,
+      grammar: selectedGrammar,
     };
-
-
-
-    try {
-      const res = await fetch("http://localhost:8000/api/clr_states/", {
+  try {
+      if(parserType == "CLR"){
+      const res = await fetch("http://127.0.0.1:8000/parse_CLR/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -44,13 +46,53 @@ export default function Home() {
       });
 
       const data = await res.json();
-      console.log("Response from backend:", data);
-      alert(`${parserType} Parsing Completed. Check console for results.`);
+      setResultData(data);
+      }
+      else{
+        const res = await fetch("http://127.0.0.1:8000/parse_CLR/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      setResultData(data);
+      }
+
+
+      // ⬇️ Nicely format and log full response
+      console.log("🟢 Parsing Result Received from Backend:");
+      console.log("Status:", resultData.status);
+      console.log("\n🔹 First & Follow Sets:");
+      console.table(resultData.first_follow);
+
+      console.log("\n🔹 Canonical Items:");
+      resultData.canonical_items.forEach((item, index) => {
+        console.log(`Item ${index}:`, item);
+      });
+
+      console.log("\n🔹 CLR Table:");
+      Object.entries(resultData.clr_table).forEach(([state, actions]) => {
+        console.log(`State ${state}:`, actions);
+      });
+
+      console.log("\n🔹 Parsing Steps:");
+      resultData.parsing_steps.forEach((step, index) => {
+        console.log(`Step ${index}:`, step);
+      });
+
+      console.log("\n🔹 Error Code:", resultData.error);
+
+      alert(`${parserType} Parsing Completed. Check console for detailed output.`);
+     
     } catch (error) {
-      console.error("Error:", error);
+      console.error("❌ Error in request:", error);
       alert("Something went wrong!");
     }
   };
+
 
   const dropdownStyle = {
     width: "100%",
@@ -64,32 +106,55 @@ export default function Home() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f4f6f8", fontFamily: "Arial, sans-serif" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f4f4f9", fontFamily: "Arial, sans-serif" }}>
       {/* Header */}
       <header
-        style={{
-          backgroundColor: "#003366",
-          color: "white",
-          padding: "1rem 2rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        }}
-      >
-        <div style={{ flex: 1, textAlign: "center", fontSize: "1.7rem", fontWeight: "bold" }}>
-          Parser Visualizer
-        </div>
-        <div>
-         
-        </div>
-      </header>
+  style={{
+    background: "#121212",
+    color: "white",
+    padding: "1.2rem 2rem",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
+    fontFamily: "'Poppins', sans-serif",
+    borderBottom: "1px solid #2c2c3c",
+  }}
+>
+  <div
+    style={{
+      flex: 1,
+      textAlign: "center",
+      fontSize: "2rem",
+      fontWeight: 600,
+      letterSpacing: "1px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.8rem",
+       color: "white",
+      textShadow:
+      "0 0 5px orange, 0 0 10px orange, 0 0 15px orange, 0 0 20px green,0 0 25px green",
+    }}
+  >
+    <img
+      src="./logo.png"
+      alt="Parser Visualizer Logo"
+      style={{ height: "35px", width: "35px" }}
+    />
+    Parser Visualizer
+  </div>
+
+  <div style={{ display: "flex", gap: "1rem" }}>
+    {/* Future space for user avatar, theme toggle, or settings button */}
+  </div>
+</header>
 
 
 
 
       
-      <div style={{ padding: '1rem' }}>
+      <div style={{ padding: '1rem' , backgroundColor:'#121212' }}>
         
 
        
@@ -100,7 +165,7 @@ export default function Home() {
     padding: '0.5rem 1rem',
     backgroundColor: '#004080',
     color: 'white',
-    border: 'none',
+    border: "4px solid #2c2c3c",
     borderRadius: '4px',
     cursor: 'pointer',
   }}
@@ -114,7 +179,7 @@ export default function Home() {
     padding: '0.5rem 1rem',
     backgroundColor: '#004080',
     color: 'white',
-    border: 'none',
+     border: "4px solid #2c2c3c",
     borderRadius: '4px',
     cursor: 'pointer',
   }}
@@ -131,6 +196,7 @@ export default function Home() {
       background: 'white',
       color: 'black',
       padding: '2rem',
+      border: "4px solid #2c2c3c",
       borderRadius: '6px',
       margin: '0 auto 2rem',
       maxWidth: '700px',
@@ -146,12 +212,13 @@ export default function Home() {
       </div>
 
       
-      <main style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "2rem 1rem" }}>
+      <main style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "2rem 1rem" , backgroundColor: "#121212" }}>
         <form
           onSubmit={handleSubmit}
           style={{
-            backgroundColor: "white",
+            backgroundColor: "#1e1e2f",
             padding: "2rem",
+            border: "6px solid #2c2c3c",
             borderRadius: "10px",
             boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
             width: "100%",
@@ -160,20 +227,34 @@ export default function Home() {
         >
          
           <div style={{ textAlign: 'center', marginBottom: "1.5rem" }}>
-            <label htmlFor="grammar-select" style={{ marginRight: '0.5rem', fontWeight: "bold", color: "#444" }}>Choose Grammar:</label>
+            <label htmlFor="grammar-select" style={{ marginRight: '0.5rem', fontWeight: "bold", color: "#444"}}>Choose Grammar:</label>
             <select
               id="grammar-select"
               value={selectedGrammar}
               onChange={(e) => setSelectedGrammar(e.target.value)}
-              style={dropdownStyle}
+              style={{padding: '0.5rem',
+  border: '2px solid #2c2c3c',
+  backgroundColor: '#000',
+  color: '#00ffff',
+  borderRadius: '5px',
+  fontFamily: "'Poppins', sans-serif"}}
             >
-              <option value="grammar1">Grammar 1</option>
-              <option value="grammar2">Grammar 2</option>
+              <option value="main/input_grammar_7.txt">Grammar 1</option>
+              <option value="main/grammar2.txt">Grammar 2</option>
             </select>
           </div>
 
           
-          <label style={{ display: "block", fontSize: "1.1rem", marginBottom: "0.5rem", color: "#444" }}>
+          <label style={{ display: "block", fontSize: "1.1rem", marginBottom: "0.5rem", color: "#444",width: '100%',
+  padding: '0.8rem',
+  border: '2px solid #00ffff',
+  backgroundColor: '#000',
+  color: '#00ffff',
+  fontFamily: "'Fira Code', monospace",
+  borderRadius: '6px',
+  outline: 'none',
+  boxShadow: '0 0 8px #00ffff inset',
+  resize: 'vertical' }}>
             Input code to be checked:
           </label>
           <textarea
@@ -182,15 +263,20 @@ export default function Home() {
             rows={10}
             style={{
               width: "100%",
-              padding: "1rem",
+              padding: "0.8rem",
               fontSize: "1rem",
-              border: "1px solid #ccc",
+              border: "2px solid #00ffff",
               borderRadius: "6px",
               resize: "vertical",
-              color: "black",
               backgroundColor: "#fdfdfd",
-              fontFamily: "Courier New, monospace",
               marginBottom: "1.5rem",
+              width: '100%',
+              backgroundColor: '#000',
+              color: '#00ffff',
+              fontFamily: "'Fira Code', monospace",
+              outline: 'none',
+              boxShadow: '0 0 8px #00ffff inset',
+              resize: 'vertical'
             }}
             placeholder="Type your grammar/code here..."
           />
@@ -202,7 +288,12 @@ export default function Home() {
           <select
             value={parserType}
             onChange={(e) => setParserType(e.target.value)}
-            style={dropdownStyle}
+            style={{padding: '0.5rem',
+  border: '2px solid #00ffff',
+  backgroundColor: '#000',
+  color: '#00ffff',
+  borderRadius: '5px',
+  fontFamily: "'Poppins', sans-serif"}}
           >
             <option value="CLR">CLR</option>
             <option value="SLR">SLR</option>
@@ -213,13 +304,14 @@ export default function Home() {
             <button
               type="submit"
               style={{
-                padding: "0.75rem 2rem",
                 fontSize: "1rem",
-                backgroundColor: "#003366",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
                 cursor: "pointer",
+                padding: '0.6rem 1.2rem',
+                background: 'linear-gradient(45deg, #00ff99, #00ffff)',
+                border: '2px solid #00ffcc',
+                color: 'black',
+                borderRadius: '6px',
+                fontWeight: 'bold',
               }}
             >
               Submit
@@ -227,6 +319,8 @@ export default function Home() {
           </div>
         </form>
       </main>
+      {resultData && <Output result={resultData} />}
     </div>
   );
 }
+

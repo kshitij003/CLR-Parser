@@ -16,9 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from main.views import parser
-
+from main.views import parser_CLR
+from main.views import parser_SLR
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('parse/',parser),
+    path('parse_CLR/',parser_CLR),
+    path('parse_SLR/',parser_SLR),
 ]

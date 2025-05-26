@@ -1,13 +1,11 @@
-from collections import deque
 from collections import OrderedDict
-from pprint import pprint
-import firstfollow
-from firstfollow import production_list, nt_list as ntl, t_list as tl
-from lexical_analyzer import generate_tokens2
+import main.firstfollow
+from main.firstfollow import production_list, nt_list as ntl, t_list as tl
+from main.lexical_analyzer import generate_tokens2
 from django.http import JsonResponse
-
+from django.views.decorators.csrf import csrf_exempt
+import json
 nt_list, t_list=[], []
-
 
 class State:
 
@@ -26,6 +24,7 @@ class Item(str):
     def __str__(self):
         return super(Item, self).__str__()+", "+'|'.join(self.lookahead)
         
+
 
 def closure(items):
 
@@ -48,7 +47,7 @@ def closure(items):
             Y=i.split('->')[1].split('.')[1][0]
 
             if i.index('.')+1<len(i)-1:
-                lastr=list(firstfollow.compute_first(i[i.index('.')+2])-set(chr(1013)))
+                lastr=list(main.firstfollow.compute_first(i[i.index('.')+2])-set(chr(1013)))
                 
             else:
                 lastr=i.lookahead
@@ -122,6 +121,16 @@ def calc_states():
     
     return states 
 
+def serialize_table(table):
+    serializable_table = {}
+    for state_no, transitions in table.items():
+        serializable_table[state_no] = {}
+        for symbol, action in transitions.items():
+            if isinstance(action, set):
+                serializable_table[state_no][symbol] = list(action)
+            else:
+                serializable_table[state_no][symbol] = action
+    return serializable_table
 
 def make_table(states):
 
@@ -192,124 +201,297 @@ def augment_grammar():
             production_list.insert(0, chr(i)+'->'+start_prod.split('->')[0]) 
             return
         
-
-def parser(request):
-    global production_list, ntl, nt_list, tl, t_list    
-
-   
+@csrf_exempt
+def parser_CLR(request):
+     
     input_json = request.body.decode('utf-8')
-    import json
     input_data = json.loads(input_json)
     code = input_data.get("code", "")
+    grammar = input_data.get("grammar", "")
+    if code:
+
+     with open("main/temp_input_code.txt", "w") as f:
+        f.write(code)
+    else:
+        input_filename = "main/input_code_7.txt"
+        Input = generate_tokens2(input_filename) + '$'
 
   
-    firstfollow.main()
-    first_follow_result = {}
+    global production_list, ntl, nt_list, tl, t_list 
+
+    main.firstfollow.main(grammar)
+    print('\n\n__________________________________________________________________________________________________________________________________________________\n')
+    print("FIRST AND FOLLOW OF NON-TERMINALS\n")
+    first_follow = {}
+
     for nt in ntl:
-        firstfollow.compute_first(nt)
-        firstfollow.compute_follow(nt)
-        first_follow_result[nt] = {
-            "FIRST": list(firstfollow.get_first(nt)),
-            "FOLLOW": list(firstfollow.get_follow(nt))
+        main.firstfollow.compute_first(nt)
+        main.firstfollow.compute_follow(nt)
+    
+        first_follow[nt] = {
+            "first": list(main.firstfollow.get_first(nt)),
+            "follow": list(main.firstfollow.get_follow(nt))
         }
+        print(nt)
+        print("\tFIRST:\t", first_follow[nt]["first"])
+        print("\tFOLLOW:\t", first_follow[nt]["follow"], "\n")
+        
 
-   
     augment_grammar()
-    nt_list = list(ntl.keys())
-    t_list = list(tl.keys()) + ['$']
+    nt_list=list(ntl.keys())
+    t_list=list(tl.keys()) + ['$']
 
-   
-    states = calc_states()
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    print("NON TERMINALS : {}\n".format(nt_list))
+    print("TERMINALS : {}".format(t_list))
+
+    j=calc_states()
+
+    ctr=0
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    print("CANONICAL ITEMSETS\n")
+    for s in j:
+        print("ITEM {}:".format(ctr))
+        for i in s:
+            print("\t", i)
+        ctr+=1
 
     canonical_items = []
-    for i, state in enumerate(states):
-        canonical_items.append({
-            "item_no": i,
-            "items": [str(item) for item in state]
-        })
+    for idx, state in enumerate(j):
+        state_dict = {
+            "state_no": idx,
+            "items": [str(item) for item in state]  # Ensure each item is a string
+        }
+        canonical_items.append(state_dict)
 
-   
-    clr_table = make_table(states)
-    table_display = {}
+    table=make_table(j)
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    print("\nCLR(1) TABLE\n")
     sym_list = nt_list + t_list
-    for state_no, transitions in clr_table.items():
-        row = {}
-        for sym in sym_list:
-            cell = transitions.get(sym, '')
-            if isinstance(cell, set):
-                cell = list(cell)[0] if len(cell) == 1 else list(cell)
-            row[sym] = cell if cell else ""
-        table_display[state_no] = row
+    sr, rr=0, 0
+    print('\t|  ','\t|  '.join(sym_list),'\t\t|')
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    for i, j in table.items():
+            
+        print(i, "\t|  ", '\t|  '.join(list(j.get(sym,' ') if type(j.get(sym))in (str , None) else next(iter(j.get(sym,' ')))  for sym in sym_list)),'\t\t|')
+        s, r=0, 0
 
-   
-    Input = generate_tokens2(code) + '$'
-
-    
-    stack_steps = []
+        for p in j.values():
+            if p!='accept' and len(p)>1:
+                p=list(p)
+                if('r' in p[0]): r+=1
+                else: s+=1
+                if('r' in p[1]): r+=1
+                else: s+=1      
+        if r>0 and s>0: sr+=1
+        elif r>0: rr+=1
+    print('\n_____________________________________________________________________________________________________________________________________________\n')
+    print("\nRESULTS OF CLR\n")
+    print("\n", sr, "s/r conflicts |", rr, "r/r conflicts")
+    print('\n_____________________________________________________________________________________________________________________________________________\n')
+    print("\n\nPHASE 2 OF A COMPILER : SYNTAX ANALYSIS")
+    print("ENTER THE FILENAME OF THE INPUT PROGRAM TO BE PARSED\n(syntax analysis will be performed on this program according to the grammar provided)")
+    Input = generate_tokens2("main/temp_input_code.txt") + '$'
+    print('\n_____________________________________________________________________________________________________________________________________________\n')
+    print("INPUT PROGRAM IN THE FORM OF STRING OF TOKENS\n")
+    print(Input)
     try:
+        parsing_steps = []
         stack = ['0']
-        a = list(clr_table.items())
-        i = 0
-        stack_steps.append({
-            "stack": stack.copy(),
-            "input": list(Input)
-        })
+        a = list(table.items())
 
-        while Input:
+        while len(Input) != 0:
+            step = {}
             curr_state = int(stack[-1])
-            action = clr_table[curr_state].get(Input[0], None)
+            symbol = Input[0]
+            action = list(a[curr_state][1][symbol])[0]
 
-            if not action:
-                raise ValueError("Invalid transition")
+            step['stack'] = ''.join(stack)
+            step['input'] = ''.join(Input)
 
-            if isinstance(action, set):
-                action = list(action)[0]
-
-            if action.startswith("s"):
-                stack.append(Input[0])
+            if action[0] == "s":
+                step['action'] = f"Shift {symbol}"
+                stack.append(symbol)
                 stack.append(action[1:])
                 Input = Input[1:]
-            elif action.startswith("r"):
-                prod_index = int(action[1:])
-                prod = production_list[prod_index]
-                lhs, rhs = prod.split("->")
-                symbols_to_pop = len(rhs) * 2
-                stack = stack[:-symbols_to_pop]
-                curr_state = int(stack[-1])
-                goto_state = clr_table[curr_state][lhs]
+
+            elif action[0] == "r":
+                rule_num = int(action[1:])
+                production = production_list[rule_num]  # e.g. B → b
+                lhs = production[0]
+                rhs_len = len(production[3:])  # skip '→'
+                stack = stack[:-2 * rhs_len]  # pop 2 * |RHS| (symbol + state)
+                goto_state = a[int(stack[-1])][1][lhs]
                 stack.append(lhs)
                 stack.append(goto_state)
-            elif action == "accept":
-                stack_steps.append({
-                    "stack": stack.copy(),
-                    "input": list(Input),
-                    "status": "ACCEPT"
-                })
+                step['action'] = f"Reduce using {production}"
+
+            elif action[0] == "a":
+                step['action'] = "Accept"
+                step['stack'] = ''.join(stack)
+                step['input'] = ''.join(Input)
+                parsing_steps.append(step)
                 break
 
-            stack_steps.append({
-                "stack": stack.copy(),
-                "input": list(Input)
-            })
+            parsing_steps.append(step)
 
+    
         result = {
-            "first_follow": first_follow_result,
-            "canonical_items": canonical_items,
-            "clr_table": table_display,
-            "parsing_steps": stack_steps,
+            "first_follow": first_follow,
+            "canonical_items": [
+                {
+                    "state_no": i,
+                    "items": [str(item) for item in state]
+                }
+                for i, state in enumerate(j)
+            ],
+            "clr_table": serialize_table(table),
+            "parsing_steps": parsing_steps,
             "status": "Input accepted. Syntactically correct."
         }
 
     except Exception as e:
         result = {
-            "first_follow": first_follow_result,
-            "canonical_items": canonical_items,
-            "clr_table": table_display,
-            "parsing_steps": stack_steps,
+            "first_follow": first_follow,
+            "canonical_items":canonical_items,
+            "clr_table": serialize_table(table),
+            "parsing_steps": parsing_steps,
             "status": "Input not accepted. Syntactically incorrect.",
             "error": str(e)
         }
+    return JsonResponse(result,safe=False)
 
-    return JsonResponse(result)
 
-# Create your views here.
+@csrf_exempt
+def parser_SLR(request):
+    global production_list, ntl, nt_list, tl, t_list
+
+    firstfollow.main()
+    print('\n\n__________________________________________________________________________________________________________________________________________________\n')
+    print("FIRST AND FOLLOW OF NON-TERMINALS\n")
+    for nt in ntl:
+        firstfollow.compute_first(nt)
+        firstfollow.compute_follow(nt)
+        print(nt)
+        print("\tFIRST:\t", firstfollow.get_first(nt))
+        print("\tFOLLOW:\t", firstfollow.get_follow(nt), "\n")
+
+    augment_grammar()
+    nt_list = list(ntl.keys())
+    t_list = list(tl.keys()) + ['$']
+
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    print("NON TERMINALS : {}\n".format(nt_list))
+    print("TERMINALS : {}".format(t_list))
+
+    j = calc_states()
+
+    ctr = 0
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    print("CANONICAL ITEMSETS\n")
+    for s in j:
+        print("ITEM {}:".format(ctr))
+        for i in s:
+            print("\t", i)
+        ctr += 1
+
+    table = make_table(j)
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    print("\nSLR(1) TABLE\n")
+    sym_list = nt_list + t_list
+    sr, rr = 0, 0
+    print('\t|  ', '\t|  '.join(sym_list), '\t\t|')
+    print('\n__________________________________________________________________________________________________________________________________________________\n')
+    for i, j in table.items():
+        print(i, "\t|  ", '\t|  '.join(
+            list(j.get(sym, ' ') if type(j.get(sym)) in (str, None) else next(iter(j.get(sym, ' '))) for sym in sym_list)),
+            '\t\t|')
+        s, r = 0, 0
+        for p in j.values():
+            if p != 'accept' and len(p) > 1:
+                p = list(p)
+                if ('r' in p[0]):
+                    r += 1
+                else:
+                    s += 1
+                if ('r' in p[1]):
+                    r += 1
+                else:
+                    s += 1
+        if r > 0 and s > 0:
+            sr += 1
+        elif r > 0:
+            rr += 1
+    print('\n_____________________________________________________________________________________________________________________________________________\n')
+    print("\nRESULTS OF SLR\n")
+    print("\n", sr, "s/r conflicts |", rr, "r/r conflicts")
+    print('\n_____________________________________________________________________________________________________________________________________________\n')
+    print("\n\nPHASE 2 OF A COMPILER : SYNTAX ANALYSIS")
+    print("ENTER THE FILENAME OF THE INPUT PROGRAM TO BE PARSED\n(syntax analysis will be performed on this program according to the grammar provided)")
+    input_filename = input()
+    Input = generate_tokens2(input_filename) + '$'
+    print('\n_____________________________________________________________________________________________________________________________________________\n')
+    print("INPUT PROGRAM IN THE FORM OF STRING OF TOKENS\n")
+    print(Input)
+    try:
+        stack = ['0']
+        a = list(table.items())
+        print('\n_____________________________________________________________________________________________________________________________________________\n')
+        print("PRODUCTIONS\t:", production_list)
+        print('\n_____________________________________________________________________________________________________________________________________________\n')
+        print('\n\n_____________________________________________________________________________________________________________________________________________\n')
+        print('STACK', "\t\t\t\t\t", 'INPUT')
+        print('_____________________________________________________________________________________________________________________________________________\n')
+        print(*stack, "\t\t\t\t\t", *Input, sep="")
+        while len(Input) != 0:
+            top_state = int(stack[-1])
+            current_token = Input[0]
+
+            if current_token not in table[top_state]:
+                raise Exception("Parsing error: token not in table")
+
+            actions = table[top_state][current_token]
+            # actions is either a string or a set of actions, take one (if multiple, conflicts exist)
+            if isinstance(actions, set):
+                action = next(iter(actions))
+            else:
+                action = actions
+
+            if action[0] == "s":
+                # shift action
+                stack.append(current_token)
+                stack.append(action[1:])
+                Input = Input[1:]
+                print(*stack, "\t\t\t\t\t", *Input, sep="")
+            elif action[0] == "r":
+                # reduce action
+                prod_num = int(action[1:])
+                prod = production_list[prod_num]
+                head, body = prod.split('->')
+                body_len = len(body)
+                if body == 'ε':  # epsilon production special case
+                    pop_len = 0
+                else:
+                    pop_len = 2 * body_len  # because stack stores states and symbols
+                stack = stack[:-pop_len]
+                top_state = int(stack[-1])
+                goto_state = table[top_state][head]
+                if isinstance(goto_state, set):
+                    goto_state = next(iter(goto_state))
+                stack.append(head)
+                stack.append(goto_state if isinstance(goto_state, str) else str(goto_state))
+                print(*stack, "\t \t\t \t", *Input, sep="")
+            elif action == "accept":
+                print('\n_____________________________________________________________________________________________________________________________________________\n')
+                print("RESULT\n")
+                print("STRING ACCEPTED. INPUT PROGRAM IS SYNTACTICALLY CORRECT")
+                print('\n_____________________________________________________________________________________________________________________________________________\n')
+                break
+            else:
+                raise Exception("Unknown action")
+    except:
+        print('\n_____________________________________________________________________________________________________________________________________________\n')
+        print("RESULT\n")
+        print('\nxx STRING NOT ACCEPTED. INPUT PROGRAM IS SYNTACTICALLY WRONG xx\n')
+        print('\n_____________________________________________________________________________________________________________________________________________\n')
+    return
