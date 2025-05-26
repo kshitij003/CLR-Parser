@@ -49,7 +49,7 @@ export default function Home() {
       setResultData(data);
       }
       else{
-        const res = await fetch("http://127.0.0.1:8000/parse_CLR/", {
+        const res = await fetch("http://127.0.0.1:8000/parse_SLR/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -60,30 +60,6 @@ export default function Home() {
       const data = await res.json();
       setResultData(data);
       }
-
-
-      // ⬇️ Nicely format and log full response
-      console.log("🟢 Parsing Result Received from Backend:");
-      console.log("Status:", resultData.status);
-      console.log("\n🔹 First & Follow Sets:");
-      console.table(resultData.first_follow);
-
-      console.log("\n🔹 Canonical Items:");
-      resultData.canonical_items.forEach((item, index) => {
-        console.log(`Item ${index}:`, item);
-      });
-
-      console.log("\n🔹 CLR Table:");
-      Object.entries(resultData.clr_table).forEach(([state, actions]) => {
-        console.log(`State ${state}:`, actions);
-      });
-
-      console.log("\n🔹 Parsing Steps:");
-      resultData.parsing_steps.forEach((step, index) => {
-        console.log(`Step ${index}:`, step);
-      });
-
-      console.log("\n🔹 Error Code:", resultData.error);
 
       alert(`${parserType} Parsing Completed. Check console for detailed output.`);
      
@@ -134,7 +110,7 @@ export default function Home() {
       gap: "0.8rem",
        color: "white",
       textShadow:
-      "0 0 5px orange, 0 0 10px orange, 0 0 15px orange, 0 0 20px green,0 0 25px green",
+      "0 0 5px green, 0 0 10px green, 0 0 15px green, 0 0 20px green,0 0 25px green",
     }}
   >
     <img
@@ -162,12 +138,16 @@ export default function Home() {
         <button
   onClick={() => loadGrammar('grammar1')}
   style={{
-    padding: '0.5rem 1rem',
-    backgroundColor: '#004080',
-    color: 'white',
-    border: "4px solid #2c2c3c",
-    borderRadius: '4px',
-    cursor: 'pointer',
+
+                cursor: "pointer",
+                padding: '0.6rem 1.2rem',
+                background: 'linear-gradient(45deg, #00ff99, #00ffff)',
+                border: '2px solid #00ffcc',
+                borderShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                backgroundColor: '#fdfdfd',
+                color: 'black',
+                borderRadius: '6px',
+                fontWeight: 'bold',
   }}
 >
   Grammar 1
@@ -176,12 +156,15 @@ export default function Home() {
 <button
   onClick={() => loadGrammar('grammar2')}
   style={{
-    padding: '0.5rem 1rem',
-    backgroundColor: '#004080',
-    color: 'white',
-     border: "4px solid #2c2c3c",
-    borderRadius: '4px',
-    cursor: 'pointer',
+    cursor: "pointer",
+                padding: '0.6rem 1.2rem',
+                background: 'linear-gradient(45deg, #00ff99, #00ffff)',
+                border: '2px solid #00ffcc',
+                borderShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                backgroundColor: '#fdfdfd',
+                color: 'black',
+                borderRadius: '6px',
+                fontWeight: 'bold',
   }}
 >
   Grammar 2
@@ -193,11 +176,12 @@ export default function Home() {
         {grammarText && (
   <pre
     style={{
-      background: 'white',
-      color: 'black',
+      background: '#1e1e2f',
+      color: 'white',
       padding: '2rem',
-      border: "4px solid #2c2c3c",
-      borderRadius: '6px',
+      border: "6px solid white",
+      borderRadius: '10px',
+      boxShadow: '0 0 8px #00ffff inset',
       margin: '0 auto 2rem',
       maxWidth: '700px',
       whiteSpace: 'pre-wrap',
@@ -218,24 +202,24 @@ export default function Home() {
           style={{
             backgroundColor: "#1e1e2f",
             padding: "2rem",
-            border: "6px solid #2c2c3c",
+            border: "6px solid white",
             borderRadius: "10px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+            boxShadow: '0 0 8px #00ffff inset',
             width: "100%",
             maxWidth: "700px",
           }}
         >
          
           <div style={{ textAlign: 'center', marginBottom: "1.5rem" }}>
-            <label htmlFor="grammar-select" style={{ marginRight: '0.5rem', fontWeight: "bold", color: "#444"}}>Choose Grammar:</label>
+            <label htmlFor="grammar-select" style={{ marginRight: '0.5rem', fontWeight: "bold", color: "white"}}>Choose Grammar:</label>
             <select
               id="grammar-select"
               value={selectedGrammar}
               onChange={(e) => setSelectedGrammar(e.target.value)}
               style={{padding: '0.5rem',
-  border: '2px solid #2c2c3c',
+  border: '2px solid white',
   backgroundColor: '#000',
-  color: '#00ffff',
+  color: 'white',
   borderRadius: '5px',
   fontFamily: "'Poppins', sans-serif"}}
             >
@@ -247,9 +231,9 @@ export default function Home() {
           
           <label style={{ display: "block", fontSize: "1.1rem", marginBottom: "0.5rem", color: "#444",width: '100%',
   padding: '0.8rem',
-  border: '2px solid #00ffff',
+  border: '2px solid white',
   backgroundColor: '#000',
-  color: '#00ffff',
+  color: 'white',
   fontFamily: "'Fira Code', monospace",
   borderRadius: '6px',
   outline: 'none',
@@ -265,14 +249,14 @@ export default function Home() {
               width: "100%",
               padding: "0.8rem",
               fontSize: "1rem",
-              border: "2px solid #00ffff",
+              border: "2px solid white",
               borderRadius: "6px",
               resize: "vertical",
               backgroundColor: "#fdfdfd",
               marginBottom: "1.5rem",
               width: '100%',
               backgroundColor: '#000',
-              color: '#00ffff',
+              color: 'white',
               fontFamily: "'Fira Code', monospace",
               outline: 'none',
               boxShadow: '0 0 8px #00ffff inset',
@@ -282,16 +266,16 @@ export default function Home() {
           />
 
           
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold", color: "#444" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold", color: "white" }}>
             Select Parser Type:
           </label>
           <select
             value={parserType}
             onChange={(e) => setParserType(e.target.value)}
             style={{padding: '0.5rem',
-  border: '2px solid #00ffff',
+  border: '2px solid  white',
   backgroundColor: '#000',
-  color: '#00ffff',
+  color: 'white',
   borderRadius: '5px',
   fontFamily: "'Poppins', sans-serif"}}
           >
@@ -314,7 +298,7 @@ export default function Home() {
                 fontWeight: 'bold',
               }}
             >
-              Submit
+              PARSE
             </button>
           </div>
         </form>

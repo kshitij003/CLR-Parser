@@ -9,8 +9,8 @@ export default function Output({ result }) {
   const thStyle = "bg-gray-700 text-white font-semibold";
 
   return (
-    <div className="bg-black text-white min-h-screen px-6 py-10 space-y-6">
-      <h1 className="text-3xl font-bold text-green-400 text-center">{status}</h1>
+    <div className="bg-black min-h-screen px-6 py-10 space-y-6">
+      <h1 className={`text-3xl font-bold ${status === 'Accepted' ? 'text-green-400' : 'text-red-400'} text-left`}>{status}</h1>
 
       {/* First & Follow Sets */}
       <section className="bg-gray-800 p-4 rounded-md shadow-md overflow-x-auto">
@@ -29,47 +29,6 @@ export default function Output({ result }) {
                 <td className={tableStyle}>{nonTerminal}</td>
                 <td className={tableStyle}>{sets.first.join(', ')}</td>
                 <td className={tableStyle}>{sets.follow.join(', ')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-      
-      {/* Parse Table */}
-      <section className="bg-gray-900 p-4 rounded-md shadow-md overflow-x-auto">
-        <h2 className="text-xl font-semibold mb-2 text-white">CLR(1) Parse Table</h2>
-        <table className="min-w-full border-collapse text-white">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1">State</th>
-              {Array.from(
-                new Set(
-                  Object.values(clr_table).flatMap(row => Object.keys(row))
-                )
-              )
-                .sort()
-                .map(symbol => (
-                  <th key={symbol} className="border px-2 py-1">{symbol}</th>
-                ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(clr_table).map(([state, actions]) => (
-              <tr key={state}>
-                <td className="border px-2 py-1">{state}</td>
-                {Array.from(
-                  new Set(
-                    Object.values(clr_table).flatMap(row => Object.keys(row))
-                  )
-                )
-                  .sort()
-                  .map(symbol => (
-                    <td key={symbol} className="border px-2 py-1 text-center">
-                      {Array.isArray(actions[symbol])
-                        ? actions[symbol].join(', ')
-                        : actions[symbol] || ''}
-                    </td>
-                  ))}
               </tr>
             ))}
           </tbody>
@@ -102,6 +61,48 @@ export default function Output({ result }) {
           </tbody>
         </table>
       </section>
+      
+      {/* Parse Table */}
+      <section className="bg-gray-900 p-4 rounded-md shadow-md overflow-x-auto">
+        <h2 className="text-xl font-semibold mb-2 text-white">CLR(1) Parse Table</h2>
+        <table className="min-w-full border-collapse text-white">
+          <thead>
+            <tr>
+              <th className="border px-2 py-1">State</th>
+              {Array.from(
+                new Set(
+                  Object.values(clr_table).flatMap(row => Object.keys(row))
+                )
+              )
+              .sort()
+                .map(symbol => (
+                  <th key={symbol} className="border px-2 py-1">{symbol}</th>
+                ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(clr_table).map(([state, actions]) => (
+              <tr key={state}>
+                <td className="border px-2 py-1">{state}</td>
+                {Array.from(
+                  new Set(
+                    Object.values(clr_table).flatMap(row => Object.keys(row))
+                  )
+                )
+                  .sort()
+                  .map(symbol => (
+                    <td key={symbol} className="border px-2 py-1 text-center">
+                      {Array.isArray(actions[symbol])
+                        ? actions[symbol].join(', ')
+                        : actions[symbol] || ''}
+                    </td>
+                  ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
 
       {/* Parsing Steps */}
       <section className="bg-gray-800 p-4 rounded-md shadow-md overflow-x-auto">
