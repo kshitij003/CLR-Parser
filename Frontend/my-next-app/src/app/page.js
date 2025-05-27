@@ -11,6 +11,8 @@ export default function Home() {
   const [selectedGrammar, setSelectedGrammar] = useState('main/input_grammar_7.txt');
   const [grammarText, setGrammarText] = useState('');
   const [resultData, setResultData] = useState(null);
+  const [uploadedFileContent, setUploadedFileContent] = useState('');
+
 
 
 
@@ -32,9 +34,10 @@ export default function Home() {
     e.preventDefault();
 
     const payload = {
-      code: code,
-      grammar: selectedGrammar,
-    };
+  code: code || uploadedFileContent,
+  grammar: selectedGrammar,
+};
+
   try {
       if(parserType == "CLR"){
       const res = await fetch("http://127.0.0.1:8000/parse_CLR/", {
@@ -265,7 +268,33 @@ export default function Home() {
             placeholder="Type your grammar/code here..."
           />
 
-          
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold", color: "white" }}>
+  Or Upload Code File (.txt):
+</label>
+<input
+  type="file"
+  accept=".txt"
+  onChange={(e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUploadedFileContent(event.target.result); // Save file content
+      };
+      reader.readAsText(file);
+    }
+  }}
+  style={{
+    padding: '0.5rem',
+    border: '2px solid white',
+    backgroundColor: '#000',
+    color: 'white',
+    borderRadius: '5px',
+    marginBottom: '1.5rem',
+    fontFamily: "'Fira Code', monospace"
+  }}
+/>
+
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold", color: "white" }}>
             Select Parser Type:
           </label>

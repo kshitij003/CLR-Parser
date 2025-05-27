@@ -6,4 +6,4 @@ begin
       n = n / 2 ;
    end while
  return count
-end
+end 

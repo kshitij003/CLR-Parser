@@ -33,6 +33,7 @@ class NonTerminal:
 
 # ------------------------------------------------------------------
 
+
 def compute_first(symbol): #chr(1013) corresponds (ϵ) in Unicode
 
 
@@ -113,7 +114,7 @@ def get_follow(symbol):
 # ------------------------------------------------------------------    
 
 def main(grammar):
-
+    global production_list, nt_list, t_list
     F = open(grammar,"r")
 
     ctr=1
